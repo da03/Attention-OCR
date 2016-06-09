@@ -1,7 +1,7 @@
 # Attention-OCR
 Visual Attention based OCR. The model first runs a sliding CNN on the image (images are resized to height 32 while preserving aspect ratio). Then an LSTM is stacked on top of the CNN. Finally, an attenion model is used as a decoder for producing the final outputs.
 
-![example image 0](http://cs.cmu.edu/~yuntiand/OCR.jpg)
+![example image 0](http://cs.cmu.edu/~yuntiand/OCR-2.jpg)
 
 # Prerequsites
 Most of our code is written based on Tensorflow, but we also use Keras for the convolution part of our model. Besides, we use python package distance to calculate edit distance for evaluation. (However, that is not mandatory, if distance is not installed, we will do exact match).
@@ -139,17 +139,17 @@ Example output images in `results/correct` (the output directory is set via para
 
 Format: Image `index` (`predicted`/`ground truth`) `Image file`
 
-Image 0 (j/j): ![example image 0](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_0.jpg)
+Image 0 (j/j): ![example image 0](http://cs.cmu.edu/~yuntiand/2evaluation_data_icdar13_images_word_370.png/image_0.jpg)
 
-Image 1 (u/u): ![example image 1](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_1.jpg)
+Image 1 (u/u): ![example image 1](http://cs.cmu.edu/~yuntiand/2evaluation_data_icdar13_images_word_370.png/image_1.jpg)
 
-Image 2 (n/n): ![example image 2](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_2.jpg)
+Image 2 (n/n): ![example image 2](http://cs.cmu.edu/~yuntiand/2evaluation_data_icdar13_images_word_370.png/image_2.jpg)
 
-Image 3 (g/g): ![example image 3](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_3.jpg)
+Image 3 (g/g): ![example image 3](http://cs.cmu.edu/~yuntiand/2evaluation_data_icdar13_images_word_370.png/image_3.jpg)
 
-Image 4 (l/l): ![example image 4](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_4.jpg)
+Image 4 (l/l): ![example image 4](http://cs.cmu.edu/~yuntiand/2evaluation_data_icdar13_images_word_370.png/image_4.jpg)
 
-Image 5 (e/e): ![example image 5](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_5.jpg)
+Image 5 (e/e): ![example image 5](http://cs.cmu.edu/~yuntiand/2evaluation_data_icdar13_images_word_370.png/image_5.jpg)
 
 
 # Parameters:
