@@ -135,21 +135,21 @@ After a while, you will see something like the following output in `log.txt`:
 
 ```
 
-Example output images in `results/correct` (the output directory is set via parameter `output-dir` and the default is `results`):
+Example output images in `results/correct` (the output directory is set via parameter `output-dir` and the default is `results`): (Look closer to see it clearly.)
 
 Format: Image `index` (`predicted`/`ground truth`) `Image file`
 
-Image 0 (p/p): ![example image 0](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_0.jpg)
+Image 0 (j/j): ![example image 0](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_0.jpg)
 
-Image 1 (e/e): ![example image 1](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_1.jpg)
+Image 1 (u/u): ![example image 1](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_1.jpg)
 
 Image 2 (n/n): ![example image 2](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_2.jpg)
 
-Image 3 (t/t): ![example image 3](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_3.jpg)
+Image 3 (g/g): ![example image 3](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_3.jpg)
 
-Image 4 (i/i): ![example image 4](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_4.jpg)
+Image 4 (l/l): ![example image 4](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_4.jpg)
 
-Image 5 (u/u): ![example image 5](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_5.jpg)
+Image 5 (e/e): ![example image 5](http://cs.cmu.edu/~yuntiand/evaluation_data_icdar13_images_word_370.png/image_5.jpg)
 
 
 # Parameters:
