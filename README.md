@@ -170,7 +170,7 @@ Image 5 (e/e): ![example image 5](http://cs.cmu.edu/~yuntiand/2evaluation_data_i
 - Optimization
     * `num-epoch`: The number of whole data passes.
     * `batch-size`: Batch size. Only valid if `phase` is set to train.
-    * `initial-learning-rate`: Inittial learning rate, note the we use AdaDelta, so the initial value doe not matter much.
+    * `initial-learning-rate`: Initial learning rate, note the we use AdaDelta, so the initial value doe not matter much.
 
 - Network
     * `target-embedding-size`: Embedding dimension for each target.
