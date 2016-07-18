@@ -22,7 +22,7 @@ class ExpConfig:
     # Optimization
     NUM_EPOCH = 1000
     BATCH_SIZE = 64
-    INITIAL_LEARNING_RATE = 0.001 # initial learning rate, note the we use AdaDelta, so the initial value doe not matter much
+    INITIAL_LEARNING_RATE = 1.0 # initial learning rate, note the we use AdaDelta, so the initial value doe not matter much
 
     # Network parameters
     TARGET_EMBEDDING_SIZE = 10 # embedding dimension for each target
