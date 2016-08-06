@@ -6,7 +6,8 @@ Default paramters for experiemnt
 
 
 class ExpConfig:
-
+    
+    GPU_ID = 0
     # phase 
     PHASE = 'test'
     VISUALIZE = True

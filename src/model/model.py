@@ -42,9 +42,12 @@ class Model(object):
             attn_num_layers, 
             session,
             load_model,
+            gpu_id,
             evaluate=False,
             valid_target_length=float('inf'),
             use_lstm=True):
+
+        gpu_device_id = '/gpu:' + str(gpu_id)
 
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
@@ -110,16 +113,17 @@ class Model(object):
         else:
             assert False, phase
         #with tf.device('/gpu:1'):
-        with tf.device('/gpu:0'):
+        with tf.device(gpu_device_id):
             cnn_model = CNN(self.img_data)
             self.conv_output = cnn_model.tf_output()
             self.concat_conv_output = tf.concat(concat_dim=1, values=[self.conv_output, self.zero_paddings])
         
         #with tf.device('/cpu:0'): 
-        with tf.device('/gpu:0'): 
+        with tf.device(gpu_device_id): 
             self.perm_conv_output = tf.transpose(self.concat_conv_output, perm=[1, 0, 2])
         
-        with tf.device('/gpu:0'):
+        #with tf.device('/gpu:1'):
+        with tf.device(gpu_device_id):
             self.attention_decoder_model = Seq2SeqModel(
                 encoder_masks = self.encoder_masks,
                 encoder_inputs_tensor = self.perm_conv_output, 
@@ -149,7 +153,7 @@ class Model(object):
         if not self.forward_only:
             #self.gradient_norms = []
             self.updates = []
-            with tf.device('/gpu:0'):
+            with tf.device(gpu_device_id):
             #opt = tf.train.GradientDescentOptimizer(self.learning_rate)
                 opt = tf.train.AdadeltaOptimizer(learning_rate=initial_learning_rate, rho=0.95, epsilon=1e-08, use_locking=False, name='Adadelta')
                 for b in xrange(len(buckets)):
@@ -159,7 +163,7 @@ class Model(object):
                         zip(gradients, params), global_step=self.global_step))
        
             #with tf.device('/gpu:1'):
-            with tf.device('/gpu:0'):
+            with tf.device(gpu_device_id):
                 self.keras_updates = []
                 for old_value, new_value in cnn_model.model.updates:
                         self.keras_updates.append(tf.assign(old_value, new_value))

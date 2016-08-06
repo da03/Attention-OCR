@@ -15,6 +15,9 @@ import exp_config
 def process_args(args, defaults):
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--gpu-id', dest="gpu_id",
+                        type=int, default=defaults.GPU_ID)
+
     parser.add_argument('--phase', dest="phase",
                         type=str, default=defaults.PHASE,
                         choices=['train', 'test'],
@@ -115,6 +118,7 @@ def main(args, defaults):
                 attn_num_layers = parameters.attn_num_layers,
                 load_model = parameters.load_model,
                 valid_target_length = float('inf'),
+                gpu_id=parameters.gpu_id,
                 session = sess)
         model.launch()
 
