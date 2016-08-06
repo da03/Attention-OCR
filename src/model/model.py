@@ -43,9 +43,9 @@ class Model(object):
             session,
             load_model,
             gpu_id,
+            use_gru,
             evaluate=False,
-            valid_target_length=float('inf'),
-            use_lstm=True):
+            valid_target_length=float('inf')):
 
         gpu_device_id = '/gpu:' + str(gpu_id)
 
@@ -76,6 +76,8 @@ class Model(object):
         buckets = self.s_gen.bucket_specs
         logging.info('buckets')
         logging.info(buckets)
+        if use_gru:
+            logging.info('ues GRU in the decoder.')
 
         # variables
         self.img_data = tf.placeholder(tf.float32, shape=(None, 1, 32, None), name='img_data')
@@ -135,7 +137,7 @@ class Model(object):
                 attn_num_layers = attn_num_layers,
                 attn_num_hidden = attn_num_hidden,
                 forward_only = self.forward_only,
-                use_lstm = use_lstm)
+                use_gru = use_gru)
         
         # Gradients and SGD update operation for training the model.
         params_raw = tf.trainable_variables()
@@ -300,6 +302,7 @@ class Model(object):
                                     "%.2f" % (self.global_step.eval(),
                                     step_time, perplexity))
                         previous_losses.append(loss)
+                        print("epoch: {}, step: {}, loss: {}, perplexity: {}, step_time: {}".format(epoch, current_step, loss, perplexity, curr_step_time))
                         # Save checkpoint and zero timer and loss.
                         if not self.forward_only:
                             checkpoint_path = os.path.join(self.model_dir, "translate.ckpt")
