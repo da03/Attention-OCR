@@ -6,7 +6,8 @@ Default paramters for experiemnt
 
 
 class ExpConfig:
-
+    
+    GPU_ID = 0
     # phase 
     PHASE = 'test'
     VISUALIZE = True
@@ -17,7 +18,7 @@ class ExpConfig:
     MODEL_DIR = 'train' # the directory for saving and loading model parameters (structure is not stored)
     LOG_PATH = 'log.txt'
     OUTPUT_DIR = 'results' # output directory
-    STEPS_PER_CHECKPOINT = 400 # checkpointing (print perplexity, save model) per how many steps
+    STEPS_PER_CHECKPOINT = 500 # checkpointing (print perplexity, save model) per how many steps
 
     # Optimization
     NUM_EPOCH = 1000
@@ -25,7 +26,7 @@ class ExpConfig:
     INITIAL_LEARNING_RATE = 1.0 # initial learning rate, note the we use AdaDelta, so the initial value doe not matter much
 
     # Network parameters
-    TARGET_EMBEDDING_SIZE = 10 # embedding dimension for each target
+    TARGET_EMBEDDING_SIZE = 20 # embedding dimension for each target
     ATTN_USE_LSTM = True # whether or not use LSTM attention decoder cell
     ATTN_NUM_HIDDEN=128 # number of hidden units in attention decoder cell
     ATTN_NUM_LAYERS = 2 # number of layers in attention decoder cell

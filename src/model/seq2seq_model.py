@@ -56,7 +56,7 @@ class Seq2SeqModel(object):
             attn_num_layers,
             attn_num_hidden,
             forward_only,
-            use_lstm):
+            use_gru):
         """Create the model.
 
         Args:
@@ -84,10 +84,12 @@ class Seq2SeqModel(object):
         self.encoder_masks = encoder_masks
 
         # Create the internal multi-layer cell for our RNN.
-        single_cell = tf.nn.rnn_cell.GRUCell(attn_num_hidden)
-        if use_lstm:
-            single_cell = tf.nn.rnn_cell.BasicLSTMCell(attn_num_hidden, forget_bias=0.0)
+        single_cell = tf.nn.rnn_cell.BasicLSTMCell(attn_num_hidden, forget_bias=0.0)
+        if use_gru:
+            print("using GRU CELL in decoder")
+            single_cell = tf.nn.rnn_cell.GRUCell(attn_num_hidden)
         cell = single_cell
+
         if attn_num_layers > 1:
             cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] * attn_num_layers)
 
