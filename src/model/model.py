@@ -114,17 +114,15 @@ class Model(object):
             self.forward_only = True
         else:
             assert False, phase
-        #with tf.device('/gpu:1'):
+
         with tf.device(gpu_device_id):
             cnn_model = CNN(self.img_data)
             self.conv_output = cnn_model.tf_output()
             self.concat_conv_output = tf.concat(concat_dim=1, values=[self.conv_output, self.zero_paddings])
         
-        #with tf.device('/cpu:0'): 
         with tf.device(gpu_device_id): 
             self.perm_conv_output = tf.transpose(self.concat_conv_output, perm=[1, 0, 2])
-        
-        #with tf.device('/gpu:1'):
+
         with tf.device(gpu_device_id):
             self.attention_decoder_model = Seq2SeqModel(
                 encoder_masks = self.encoder_masks,
@@ -164,7 +162,6 @@ class Model(object):
                     self.updates.append(opt.apply_gradients(
                         zip(gradients, params), global_step=self.global_step))
        
-            #with tf.device('/gpu:1'):
             with tf.device(gpu_device_id):
                 self.keras_updates = []
                 for old_value, new_value in cnn_model.model.updates:
