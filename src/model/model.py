@@ -119,6 +119,9 @@ class Model(object):
             self.conv_output = cnn_model.tf_output()
             self.concat_conv_output = tf.concat(concat_dim=1, values=[self.conv_output, self.zero_paddings])
             self.perm_conv_output = tf.transpose(self.concat_conv_output, perm=[1, 0, 2])
+
+
+        with tf.device(gpu_device_id):
             self.attention_decoder_model = Seq2SeqModel(
                 encoder_masks = self.encoder_masks,
                 encoder_inputs_tensor = self.perm_conv_output, 
