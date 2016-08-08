@@ -52,7 +52,7 @@ class Model(object):
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
         logging.info('loading data')
-        # load data
+
         if phase == 'train':
             self.s_gen = DataGen(
                 data_base_dir, data_path, valid_target_len=valid_target_length, evaluate=False)
@@ -61,7 +61,6 @@ class Model(object):
             self.s_gen = DataGen(
                 data_base_dir, data_path, evaluate=True)
 
-        #logging.info('valid_target_length: %s' %(str(valid_target_length)))
         logging.info('data_path: %s' %(data_path))
         logging.info('phase: %s' %phase)    
         logging.info('batch_size: %d' %batch_size)
@@ -119,11 +118,7 @@ class Model(object):
             cnn_model = CNN(self.img_data)
             self.conv_output = cnn_model.tf_output()
             self.concat_conv_output = tf.concat(concat_dim=1, values=[self.conv_output, self.zero_paddings])
-        
-        with tf.device(gpu_device_id): 
             self.perm_conv_output = tf.transpose(self.concat_conv_output, perm=[1, 0, 2])
-
-        with tf.device(gpu_device_id):
             self.attention_decoder_model = Seq2SeqModel(
                 encoder_masks = self.encoder_masks,
                 encoder_inputs_tensor = self.perm_conv_output, 
@@ -154,7 +149,6 @@ class Model(object):
             #self.gradient_norms = []
             self.updates = []
             with tf.device(gpu_device_id):
-            #opt = tf.train.GradientDescentOptimizer(self.learning_rate)
                 opt = tf.train.AdadeltaOptimizer(learning_rate=initial_learning_rate, rho=0.95, epsilon=1e-08, use_locking=False, name='Adadelta')
                 for b in xrange(len(buckets)):
                     gradients = tf.gradients(self.attention_decoder_model.losses[b], params)
@@ -195,7 +189,6 @@ class Model(object):
         else:
             logging.info("Created model with fresh parameters.")
             self.sess.run(tf.initialize_all_variables())
-        #self.sess.run(init_new_vars_op)
 
     # train or test as specified by phase
     def launch(self):
@@ -220,21 +213,21 @@ class Model(object):
                 encoder_masks = batch['encoder_mask']
                 file_list = batch['filenames']
                 real_len = batch['real_len']
-                #print (decoder_inputs)
-                #print (encoder_masks)
+               
                 grounds = [a for a in np.array([decoder_input.tolist() for decoder_input in decoder_inputs]).transpose()]
                 _, step_loss, step_logits, step_attns = self.step(encoder_masks, img_data, zero_paddings, decoder_inputs, target_weights, bucket_id, self.forward_only)
                 curr_step_time = (time.time() - start_time)
                 step_time += curr_step_time / self.steps_per_checkpoint
-                logging.info('step_time: %f, step perplexity: %f'%(curr_step_time, math.exp(step_loss) if step_loss < 300 else float('inf')))
+                logging.info('step_time: %f, loss: %f, step perplexity: %f'%(curr_step_time, step_loss, math.exp(step_loss) if step_loss < 300 else float('inf')))
                 loss += step_loss / self.steps_per_checkpoint
                 current_step += 1
                 step_outputs = [b for b in np.array([np.argmax(logit, axis=1).tolist() for logit in step_logits]).transpose()]
                 if self.visualize:
                     step_attns = np.array([[a.tolist() for a in step_attn] for step_attn in step_attns]).transpose([1, 0, 2])
                     #print (step_attns)
+
                 for idx, output, ground in zip(range(len(grounds)), step_outputs, grounds):
-                    flag_ground,flag_out = True,True
+                    flag_ground,flag_out = True, True
                     num_total += 1
                     output_valid = []
                     ground_valid = []
@@ -267,6 +260,7 @@ class Model(object):
         elif self.phase == 'train':
             for epoch in range(self.num_epoch):
                 for batch in self.s_gen.gen(self.batch_size):
+
                     # Get a batch and make a step.
                     start_time = time.time()
                     bucket_id = batch['bucket_id']
@@ -276,14 +270,17 @@ class Model(object):
                     target_weights = batch['target_weights']
                     encoder_masks = batch['encoder_mask']
                     logging.info('current_step: %d'%current_step)
+
                     #logging.info(np.array([decoder_input.tolist() for decoder_input in decoder_inputs]).transpose()[0])
                     #print (np.array([target_weight.tolist() for target_weight in target_weights]).transpose()[0])
+
                     _, step_loss, step_logits, _ = self.step(encoder_masks, img_data, zero_paddings, decoder_inputs, target_weights, bucket_id, self.forward_only)
                     curr_step_time = (time.time() - start_time)
                     step_time += curr_step_time / self.steps_per_checkpoint
-                    logging.info('step_time: %f, step perplexity: %f'%(curr_step_time, math.exp(step_loss) if step_loss < 300 else float('inf')))
+                    logging.info('step_time: %f, step_loss: %f, step perplexity: %f'%(curr_step_time, step_loss, math.exp(step_loss) if step_loss < 300 else float('inf')))
                     loss += step_loss / self.steps_per_checkpoint
                     current_step += 1
+                    
                     # If there is an EOS symbol in outputs, cut them at that point.
                     #if data_utils.EOS_ID in step_outputs:
                     #    step_outputs = step_outputs[:step_outputs.index(data_utils.EOS_ID)]
@@ -295,11 +292,11 @@ class Model(object):
                     if current_step % self.steps_per_checkpoint == 0:
                         # Print statistics for the previous epoch.
                         perplexity = math.exp(loss) if loss < 300 else float('inf')
-                        logging.info("global step %d step-time %.2f perplexity "
-                                    "%.2f" % (self.global_step.eval(),
-                                    step_time, perplexity))
+                        logging.info("global step %d step-time %.2f loss %f  perplexity "
+                                    "%.2f" % (self.global_step.eval(), step_time, loss, perplexity))
                         previous_losses.append(loss)
                         print("epoch: {}, step: {}, loss: {}, perplexity: {}, step_time: {}".format(epoch, current_step, loss, perplexity, curr_step_time))
+
                         # Save checkpoint and zero timer and loss.
                         if not self.forward_only:
                             checkpoint_path = os.path.join(self.model_dir, "translate.ckpt")
@@ -356,6 +353,7 @@ class Model(object):
             return None, outputs[1], None, None  # Gradient norm, loss, no outputs, no attentions.
         else:
             return None, outputs[0], outputs[1:(1+self.buckets[bucket_id][1])], outputs[(1+self.buckets[bucket_id][1]):]  # No gradient norm, loss, outputs, attentions.
+
     def visualize_attention(self, filename, attentions, output_valid, ground_valid, flag_incorrect, real_len):
         if flag_incorrect:
             output_dir = os.path.join(self.output_dir, 'incorrect')
