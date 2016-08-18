@@ -1,4 +1,6 @@
 # Attention-OCR
+Authours: [Qi Guo](http://qiguo.ml) and [Yuntian Deng](https://github.com/da03)
+
 Visual Attention based OCR. The model first runs a sliding CNN on the image (images are resized to height 32 while preserving aspect ratio). Then an LSTM is stacked on top of the CNN. Finally, an attention model is used as a decoder for producing the final outputs.
 
 ![example image 0](http://cs.cmu.edu/~yuntiand/OCR-2.jpg)
