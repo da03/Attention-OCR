@@ -137,6 +137,8 @@ After a while, you will see something like the following output in `log.txt`:
 
 ```
 
+Note that since the updated Keras seems to be different from where we trained the model, the performance is really bad. In order to better use the provided model, check out the `old` branch and use Keras version 1.0.1.
+
 Example output images in `results/correct` (the output directory is set via parameter `output-dir` and the default is `results`): (Look closer to see it clearly.)
 
 Format: Image `index` (`predicted`/`ground truth`) `Image file`
