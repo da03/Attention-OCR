@@ -434,7 +434,7 @@ def embedding_tied_rnn_seq2seq(encoder_inputs, decoder_inputs, cell,
 def attention_decoder(decoder_inputs, initial_state, attention_states, cell,
                       output_size=None, num_heads=1, loop_function=None,
                       dtype=dtypes.float32, scope=None,
-                      initial_state_attention=False):
+                      initial_state_attention=False, attn_num_hidden=None):
   """RNN decoder with attention for the sequence-to-sequence model.
 
   In this context "attention" means that, during decoding, the RNN can look up
@@ -572,7 +572,7 @@ def attention_decoder(decoder_inputs, initial_state, attention_states, cell,
       # Merge input and previous attentions into one vector of the right size.
       #input_size = inp.get_shape().with_rank(2)[1]
       # TODO: use input_size
-      input_size = 128
+      input_size = attn_num_hidden
       x = linear([inp] + attns, input_size, True)
       # Run the RNN.
       cell_output, state = cell(x, state)
@@ -609,7 +609,8 @@ def embedding_attention_decoder(decoder_inputs, initial_state, attention_states,
                                 feed_previous=False,
                                 update_embedding_for_previous=True,
                                 dtype=dtypes.float32, scope=None,
-                                initial_state_attention=False):
+                                initial_state_attention=False,
+                                attn_num_hidden=None):
   """RNN decoder with embedding and attention and a pure-decoding option.
 
   Args:
@@ -672,7 +673,7 @@ def embedding_attention_decoder(decoder_inputs, initial_state, attention_states,
     return attention_decoder(
         emb_inp, initial_state, attention_states, cell, output_size=output_size,
         num_heads=num_heads, loop_function=loop_function,
-        initial_state_attention=initial_state_attention)
+        initial_state_attention=initial_state_attention, attn_num_hidden=attn_num_hidden)
 
 
 def embedding_attention_seq2seq(encoder_inputs, decoder_inputs, cell,

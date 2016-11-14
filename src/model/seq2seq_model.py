@@ -115,7 +115,8 @@ class Seq2SeqModel(object):
                     output_size=target_vocab_size, 
                     output_projection=None,
                     feed_previous=do_decode,
-                    initial_state_attention=False)
+                    initial_state_attention=False,
+                    attn_num_hidden = attn_num_hidden)
             return outputs, attention_weights_history
 
         # Our targets are decoder inputs shifted by one.
