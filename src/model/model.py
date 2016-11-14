@@ -335,7 +335,7 @@ class Model(object):
         # Input feed: encoder inputs, decoder inputs, target_weights, as provided.
         input_feed = {}
         if not forward_only:
-            input_feed[K.learning_phase()] = 0
+            input_feed[K.learning_phase()] = 1
         else:
             input_feed[K.learning_phase()] = 0
         input_feed[self.img_data.name] = img_data
