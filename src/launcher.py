@@ -5,6 +5,7 @@ import sys, argparse, logging
 import numpy as np
 from PIL import Image
 import tensorflow as tf
+tf.logging.set_verbosity(tf.logging.ERROR)
 sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
 import keras.backend as K
 K.set_session(sess)
@@ -102,6 +103,12 @@ def main(args, defaults):
         level=logging.DEBUG,
         format='%(asctime)-15s %(name)-5s %(levelname)-8s %(message)s',
         filename=parameters.log_path)
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)-15s %(name)-5s %(levelname)-8s %(message)s')
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
+
     with sess.as_default():
         model = Model(
                 phase = parameters.phase,

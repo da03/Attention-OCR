@@ -8,7 +8,6 @@ import numpy as np
 import keras.backend as K
 import tensorflow as tf
 
-
 def squeeze_dim(x, axis=-1):
     return K.squeeze(x, axis=axis)
 
@@ -48,46 +47,57 @@ class CNN(object):
         model.add(layers.Lambda(lambda x: (x - 128.0) / 128.0))
 
         model.add(layers.Convolution2D(64, 3, 3, subsample=(1, 1),
-                                       border_mode='same'))
+                                       border_mode='same',
+                                       dim_ordering='th'))
         model.add(layers.Activation('relu'))
 
-        model.add(layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+        model.add(layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2),
+                                        dim_ordering='th'))
         # print 'pool1', model.output_shape
 
         model.add(layers.Convolution2D(128, 3, 3, subsample=(1, 1),
-                                       border_mode='same'))
+                                        border_mode='same',
+                                        dim_ordering='th'))
         model.add(layers.Activation('relu'))
 
-        model.add(layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
+        model.add(layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2),
+                                        dim_ordering='th'))
         # print 'pool2', model.output_shape
 
         model.add(layers.Convolution2D(256, 3, 3, subsample=(1, 1),
-                                       border_mode='same'))
+                                       border_mode='same',
+                                       dim_ordering='th'))
         # https://gist.github.com/shagunsodhani/4441216a298df0fe6ab0
         model.add(layers.BatchNormalization(axis=1))
         model.add(layers.Activation('relu'))
 
         model.add(layers.Convolution2D(256, 3, 3, subsample=(1, 1),
-                                       border_mode='same'))
+                                       border_mode='same',
+                                       dim_ordering='th'))
         model.add(layers.Activation('relu'))
 
-        model.add(layers.MaxPooling2D(pool_size=(2, 1), strides=(2, 1)))
+        model.add(layers.MaxPooling2D(pool_size=(2, 1), strides=(2, 1),
+                                        dim_ordering='th'))
         # print 'pool3', model.output_shape
 
         model.add(layers.Convolution2D(512, 3, 3, subsample=(1, 1),
-                                       border_mode='same'))
+                                       border_mode='same',
+                                       dim_ordering='th'))
         model.add(layers.BatchNormalization(axis=1))
         model.add(layers.Activation('relu'))
 
         model.add(layers.Convolution2D(512, 3, 3, subsample=(1, 1),
-                                       border_mode='same'))
+                                       border_mode='same',
+                                       dim_ordering='th'))
         model.add(layers.Activation('relu'))
 
-        model.add(layers.MaxPooling2D(pool_size=(2, 1), strides=(2, 1)))
+        model.add(layers.MaxPooling2D(pool_size=(2, 1), strides=(2, 1),
+                                        dim_ordering='th'))
         # print 'pool4', model.output_shape
 
         model.add(layers.Convolution2D(512, 2, 2, subsample=(1, 1),
-                                       border_mode='valid'))
+                                       border_mode='valid',
+                                       dim_ordering='th'))
         model.add(layers.BatchNormalization(axis=1))
         model.add(layers.Activation('relu'))
 
@@ -98,7 +108,6 @@ class CNN(object):
         # model.add(layers.wrappers.TimeDistributed(layers.Flatten()))
         model.add(layers.Lambda(squeeze_dim, output_shape=squeeze_dim_shape))
 
-        print 'CNN outdim:', model.output_shape  # 1x32x100 -> 24x512
         self.model = model
 
     def tf_output(self):

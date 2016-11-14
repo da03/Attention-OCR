@@ -161,28 +161,40 @@ class Model(object):
        
             with tf.device(gpu_device_id):
                 self.keras_updates = []
-                for old_value, new_value in cnn_model.model.updates:
-                        self.keras_updates.append(tf.assign(old_value, new_value))
+                for i in xrange(int(len(cnn_model.model.updates)/2)):
+                    old_value = cnn_model.model.updates[i*2]
+                    new_value = cnn_model.model.updates[i*2+1]
+                    self.keras_updates.append(tf.assign(old_value, new_value))
 
+        params_dict = {}
         params_raw = tf.all_variables()
-        params_init = []
-        params_load = []
+        #params_init = []
+        #params_load = []
         for param in params_raw:
+            name = param.name
+            # to be compatible with old version saved model
+            if 'BiRNN' in name:
+                name = name.replace('BiRNN/', 'BiRNN_') 
+            if ':0' in name:
+                name = name.replace(':0', '')
+            params_dict[name] = param
             #if 'Adadelta' in param.name and ('batch' in param.name or 'conv' in param.name):
             #    params_add.append(param)
             #if not 'BiRNN' in param.name:
             #    params_load.append(param)
             #else:
             #    params_init.append(param)
-            if 'running' in param.name or (('conv' in param.name or 'batch' in param.name) and ('Ada' not in param.name)) or 'BiRNN' in param.name or 'attention' in param.name:
-                params_load.append(param)
-            else:
-                params_init.append(param)
+            #if 'BiRNN/' in param.name:
+            #    param.name = param.name.replace('BiRNN/', 'BiRNN_')
+            #if 'running' in param.name or (('conv' in param.name or 'batch' in param.name) and ('Ada' not in param.name)) or 'BiRNN' in param.name or 'attention' in param.name:
+            #    params_load.append(param)
+            #else:
+            #    params_init.append(param)
 
-        self.saver_all = tf.train.Saver(tf.all_variables())
+        self.saver_all = tf.train.Saver(params_dict)
         #self.saver = tf.train.Saver(list(set(tf.all_variables())-set(params_add)))
-        self.saver = tf.train.Saver(params_load)
-        init_new_vars_op = tf.initialize_variables(params_init)
+        #self.saver = tf.train.Saver(params_load)
+        #init_new_vars_op = tf.initialize_variables(params_init)
 
         ckpt = tf.train.get_checkpoint_state(model_dir)
         if ckpt and tf.gfile.Exists(ckpt.model_checkpoint_path) and load_model:
@@ -378,14 +390,14 @@ class Model(object):
                 img_data = np.asarray(img, dtype=np.uint8)
                 for idx in range(len(output_valid)):
                     output_filename = os.path.join(output_dir, 'image_%d.jpg'%(idx))
-                    attention = attentions[idx][:(real_len/4-1)]
+                    attention = attentions[idx][:(int(real_len/4)-1)]
 
                     # I have got the attention_orig here, which is of size 32*len(ground_truth), the only thing left is to visualize it and save it to output_filename
                     # TODO here
                     attention_orig = np.zeros(real_len)
                     for i in range(real_len):
                         if 0 < i/4-1 and i/4-1 < len(attention):
-                            attention_orig[i] = attention[i/4-1]
+                            attention_orig[i] = attention[int(i/4)-1]
                     attention_orig = np.convolve(attention_orig, [0.199547,0.200226,0.200454,0.200226,0.199547], mode='same')
                     attention_orig = np.maximum(attention_orig, 0.3)
                     attention_out = np.zeros((h, real_len))
