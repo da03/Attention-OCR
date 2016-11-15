@@ -182,3 +182,11 @@ Image 5 (e/e): ![example image 5](http://cs.cmu.edu/~yuntiand/2evaluation_data_i
     * `attn-num-hidden`: Number of hidden units in attention decoder cell.
     * `attn-num-layers`: Number of layers in attention decoder cell. (Encoder number of hidden units will be `attn-num-hidden`*`attn-num-layers`).
     * `target-vocab-size`: Target vocabulary size. Default is = 26+10+3 # 0: PADDING, 1: GO, 2: EOS, >2: 0-9, a-z
+    
+# References
+
+[Convert a formula to its LaTex source](https://github.com/harvardnlp/im2markup)
+
+[What You Get Is What You See: A Visual Markup Decompiler](https://arxiv.org/pdf/1609.04938.pdf)
+
+[Torch attention OCR](https://github.com/da03/torch-Attention-OCR)
