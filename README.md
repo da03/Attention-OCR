@@ -114,7 +114,7 @@ tar zxf model.tgz
 ```
 
 ```
-python src/launcher.py --phase=test --visualize --data-path=evaluation_data/svt/test.txt --data-base-dir=evaluation_data/svt --log-path=log.txt --load-model --model-dir=model --output-dir=results
+python src/launcher.py --phase=test --visualize --data-path=evaluation_data/svt/test.txt --data-base-dir=evaluation_data/svt --log-path=log.txt --load-model --model-dir=model --output-dir=results --old-model-version
 ```
 
 After a while, you will see something like the following output in `log.txt`:
@@ -137,7 +137,7 @@ After a while, you will see something like the following output in `log.txt`:
 
 ```
 
-Note that since the updated Keras seems to be different from where we trained the model, the performance is really bad. In order to better use the provided model, check out the `old` branch and use Keras version 1.0.1.
+Note that since the updated Keras defines `running_std` different from when we trained our model, you need to add flag `--old-model-version` if you want to use the pretrained model.
 
 Example output images in `results/correct` (the output directory is set via parameter `output-dir` and the default is `results`): (Look closer to see it clearly.)
 
