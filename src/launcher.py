@@ -86,6 +86,11 @@ def process_args(args, defaults):
                             ', default=%s' %(defaults.LOAD_MODEL)))
     parser.add_argument('--no-load-model', dest='load_model', action='store_false')
     parser.set_defaults(load_model=defaults.LOAD_MODEL)
+    parser.add_argument('--old-model-version', dest='old_model_version', action='store_true',
+                        help=('Whether the model was created by old keras version or not. Note that we need to make conversions for such old models.'
+                            ', default=%s' %(defaults.OLD_MODEL_VERSION)))
+    parser.add_argument('--no-old-model-version', dest='old_model_version', action='store_false')
+    parser.set_defaults(old_model_version=defaults.OLD_MODEL_VERSION)
     parser.add_argument('--log-path', dest="log_path",
                         type=str, default=defaults.LOG_PATH,
                         help=('Log file path, default=%s' 
@@ -129,7 +134,8 @@ def main(args, defaults):
                 valid_target_length = float('inf'),
                 gpu_id=parameters.gpu_id,
                 use_gru=parameters.use_gru,
-                session = sess)
+                session = sess,
+                old_model_version = parameters.old_model_version)
         model.launch()
 
 if __name__ == "__main__":

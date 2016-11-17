@@ -45,7 +45,8 @@ class Model(object):
             gpu_id,
             use_gru,
             evaluate=False,
-            valid_target_length=float('inf')):
+            valid_target_length=float('inf'),
+            old_model_version=False):
 
         gpu_device_id = '/gpu:' + str(gpu_id)
 
@@ -139,10 +140,14 @@ class Model(object):
         params_raw = tf.trainable_variables()
         params = []
         params_add = []
+        params_run = []
         for param in params_raw:
             #if 'running' in param.name or 'conv' in param.name or 'batch' in param.name:
             if 'running' in param.name:
                 logging.info('parameter {0} NOT trainable'.format(param.name))
+                # for old keras conversion
+                if 'running_std' in param.name:
+                    params_run.append(param)
             else:
                 logging.info('parameter {0} trainable'.format(param.name))
                 params.append(param)
@@ -201,6 +206,9 @@ class Model(object):
             logging.info("Reading model parameters from %s" % ckpt.model_checkpoint_path)
             #self.saver.restore(self.sess, ckpt.model_checkpoint_path)
             self.saver_all.restore(self.sess, ckpt.model_checkpoint_path)
+            if old_model_version:
+                for param in params_run:
+                    self.sess.run([param.assign(tf.square(param))])
         else:
             logging.info("Created model with fresh parameters.")
             self.sess.run(tf.initialize_all_variables())

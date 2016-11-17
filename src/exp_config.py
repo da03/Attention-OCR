@@ -32,4 +32,5 @@ class ExpConfig:
     ATTN_NUM_LAYERS = 2 # number of layers in attention decoder cell
                         # (Encoder number of hidden units will be ATTN_NUM_HIDDEN*ATTN_NUM_LAYERS)
     LOAD_MODEL = True
+    OLD_MODEL_VERSION = False
     TARGET_VOCAB_SIZE = 26+10+3 # 0: PADDING, 1: GO, 2: EOS, >2: 0-9, a-z
