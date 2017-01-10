@@ -4,9 +4,11 @@ import os
 import numpy as np
 from PIL import Image
 from collections import Counter
-import cPickle
-import random
-from bucketdata import BucketData
+import _pickle as cPickle
+import random, math
+from data_util.bucketdata import BucketData
+import ipdb
+
 
 
 class DataGen(object):
@@ -35,13 +37,13 @@ class DataGen(object):
             self.annotation_path = os.path.join(data_root, annotation_fn)
 
         if evaluate:
-            self.bucket_specs = [(64 / 4, word_len + 2), (108 / 4, word_len + 2),
-                                 (140 / 4, word_len + 2), (256 / 4, word_len + 2),
-                                 (img_width_range[1] / 4, word_len + 2)]
+            self.bucket_specs = [(int(math.floor(64 / 4)), int(word_len + 2)), (int(math.floor(108 / 4)), int(word_len + 2)),
+                                 (int(math.floor(140 / 4)), int(word_len + 2)), (int(math.floor(256 / 4)), int(word_len + 2)),
+                                 (int(math.floor(img_width_range[1] / 4)), int(word_len + 2))]
         else:
-            self.bucket_specs = [(64 / 4, 9 + 2), (108 / 4, 15 + 2),
-                             (140 / 4, 17 + 2), (256 / 4, 20 + 2),
-                             (img_width_range[1] / 4, word_len + 2)]
+            self.bucket_specs = [(int(64 / 4), 9 + 2), (int(108 / 4), 15 + 2),
+                             (int(140 / 4), 17 + 2), (int(256 / 4), 20 + 2),
+                             (int(math.ceil(img_width_range[1] / 4)), word_len + 2)]
 
         self.bucket_min_width, self.bucket_max_width = img_width_range
         self.image_height = img_height
@@ -54,13 +56,19 @@ class DataGen(object):
         self.bucket_data = {i: BucketData()
                             for i in range(self.bucket_max_width + 1)}
 
+    def get_size(self):
+        with open(self.annotation_path, 'r') as ann_file:
+            return len(ann_file.readlines())
+
     def gen(self, batch_size):
         valid_target_len = self.valid_target_len
-        with open(self.annotation_path, 'rb') as ann_file:
+        with open(self.annotation_path, 'r') as ann_file:
             lines = ann_file.readlines()
             random.shuffle(lines)
             for l in lines:
                 img_path, lex = l.strip().split()
+                lex = lex.lower()
+                # print('image_path: ' + img_path + ', lex: \'' + lex + '\'')
                 try:
                     img_bw, word = self.read_data(img_path, lex)
                     if valid_target_len < float('inf'):
@@ -109,6 +117,9 @@ class DataGen(object):
             img_bw = img.convert('L')
             img_bw = np.asarray(img_bw, dtype=np.uint8)
             img_bw = img_bw[np.newaxis, :]
+            #viewim = Image.fromarray(img_bw.squeeze(axis=0), mode='L')
+            #viewim.show()
+            #ipdb.set_trace()
 
         # 'a':97, '0':48
         word = [self.GO]
@@ -126,7 +137,7 @@ class DataGen(object):
 
 
 def test_gen():
-    print 'testing gen_valid'
+    print('testing gen_valid')
     # s_gen = EvalGen('../../data/evaluation_data/svt', 'test.txt')
     # s_gen = EvalGen('../../data/evaluation_data/iiit5k', 'test.txt')
     # s_gen = EvalGen('../../data/evaluation_data/icdar03', 'test.txt')
@@ -134,9 +145,9 @@ def test_gen():
     count = 0
     for batch in s_gen.gen(1):
         count += 1
-        print batch['bucket_id'], batch['data'].shape[2:]
+        print(str(batch['bucket_id']) + ' ' + str(batch['data'].shape[2:]))
         assert batch['data'].shape[2] == img_height
-    print count
+    print(count)
 
 
 if __name__ == '__main__':

@@ -5,9 +5,9 @@ import numpy as np
 from PIL import Image
 # from keras.preprocessing.sequence import pad_sequences
 from collections import Counter
-import cPickle
+import _pickle as cPickle
 import random
-
+import ipdb, math
 
 class BucketData(object):
     def __init__(self):
@@ -51,8 +51,8 @@ class BucketData(object):
 
         # ENCODER PART
         res['data'] = np.array(self.data_list)
-        real_len = max(self.max_width / 4 - 1, 0)
-        padd_len = encoder_input_len - real_len
+        real_len = max(int(math.floor(self.max_width / 4)) - 1, 0)
+        padd_len = int(encoder_input_len) - real_len
         res['zero_paddings'] = np.zeros([len(self.data_list), padd_len, 512],
                                         dtype=np.float32)
         encoder_mask = np.concatenate(
@@ -60,6 +60,8 @@ class BucketData(object):
              np.zeros([len(self.data_list), padd_len], dtype=np.float32)),
             axis=1)
         res['encoder_mask'] = [a[:, np.newaxis] for a in encoder_mask.T]  # 32, (100, )
+        if len(res['encoder_mask']) < encoder_input_len:
+            ipdb.set_trace()
         res['real_len'] = self.max_width
 
         # DECODER PART
