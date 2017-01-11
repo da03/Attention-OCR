@@ -1,11 +1,7 @@
 __author__ = 'moonkey'
 
-from keras import models, layers
 import logging
 import numpy as np
-# from src.data_util.synth_prepare import SynthGen
-
-import keras.backend as K
 import tensorflow as tf
 
 
