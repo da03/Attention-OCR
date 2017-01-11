@@ -5,6 +5,7 @@ import sys, argparse, logging
 import numpy as np
 from PIL import Image
 import tensorflow as tf
+tf.logging.set_verbosity(tf.logging.ERROR)
 sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
 import keras.backend as K
 K.set_session(sess)
@@ -14,6 +15,11 @@ import exp_config
 
 def process_args(args, defaults):
     parser = argparse.ArgumentParser()
+
+    parser.add_argument('--gpu-id', dest="gpu_id",
+                        type=int, default=defaults.GPU_ID)
+
+    parser.add_argument('--use-gru', dest='use_gru', action='store_true')
 
     parser.add_argument('--phase', dest="phase",
                         type=str, default=defaults.PHASE,
@@ -97,6 +103,12 @@ def main(args, defaults):
         level=logging.DEBUG,
         format='%(asctime)-15s %(name)-5s %(levelname)-8s %(message)s',
         filename=parameters.log_path)
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)-15s %(name)-5s %(levelname)-8s %(message)s')
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
+
     with sess.as_default():
         model = Model(
                 phase = parameters.phase,
@@ -115,8 +127,11 @@ def main(args, defaults):
                 attn_num_layers = parameters.attn_num_layers,
                 load_model = parameters.load_model,
                 valid_target_length = float('inf'),
+                gpu_id=parameters.gpu_id,
+                use_gru=parameters.use_gru,
                 session = sess)
         model.launch()
 
 if __name__ == "__main__":
     main(sys.argv[1:], exp_config.ExpConfig)
+

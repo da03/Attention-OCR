@@ -7,7 +7,6 @@ from collections import Counter
 import _pickle as cPickle
 import random, math
 from data_util.bucketdata import BucketData
-import ipdb
 
 
 
@@ -67,8 +66,6 @@ class DataGen(object):
             random.shuffle(lines)
             for l in lines:
                 img_path, lex = l.strip().split()
-                lex = lex.lower()
-                # print('image_path: ' + img_path + ', lex: \'' + lex + '\'')
                 try:
                     img_bw, word = self.read_data(img_path, lex)
                     if valid_target_len < float('inf'):
@@ -117,9 +114,6 @@ class DataGen(object):
             img_bw = img.convert('L')
             img_bw = np.asarray(img_bw, dtype=np.uint8)
             img_bw = img_bw[np.newaxis, :]
-            #viewim = Image.fromarray(img_bw.squeeze(axis=0), mode='L')
-            #viewim.show()
-            #ipdb.set_trace()
 
         # 'a':97, '0':48
         word = [self.GO]

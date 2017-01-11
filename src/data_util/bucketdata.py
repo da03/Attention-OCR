@@ -7,7 +7,7 @@ from PIL import Image
 from collections import Counter
 import _pickle as cPickle
 import random
-import ipdb, math
+import math
 
 class BucketData(object):
     def __init__(self):
@@ -60,8 +60,6 @@ class BucketData(object):
              np.zeros([len(self.data_list), padd_len], dtype=np.float32)),
             axis=1)
         res['encoder_mask'] = [a[:, np.newaxis] for a in encoder_mask.T]  # 32, (100, )
-        if len(res['encoder_mask']) < encoder_input_len:
-            ipdb.set_trace()
         res['real_len'] = self.max_width
 
         # DECODER PART

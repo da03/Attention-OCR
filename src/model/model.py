@@ -5,7 +5,6 @@ from __future__ import division
 from __future__ import print_function
 
 import random, time, os, shutil, math, sys, logging,ipdb
-
 import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 from PIL import Image
@@ -43,11 +42,13 @@ class Model(object):
             attn_num_layers, 
             session,
             load_model,
+            gpu_id,
+            use_gru,
             evaluate=False,
             valid_target_length=float('inf'),
-            use_lstm=True,
             reg_val = 0):
-
+            
+        gpu_device_id = '/gpu:' + str(gpu_id)
         if not os.path.exists(model_dir):
             os.makedirs(model_dir)
         logging.info('loading data')
@@ -75,6 +76,8 @@ class Model(object):
         buckets = self.s_gen.bucket_specs
         logging.info('buckets')
         logging.info(buckets)
+        if use_gru:
+            logging.info('ues GRU in the decoder.')
 
         # variables
         self.img_data = tf.placeholder(tf.float32, shape=(None, 1, 32, None), name='img_data')
@@ -91,7 +94,7 @@ class Model(object):
                                                     name="decoder{0}".format(i)))
             self.target_weights.append(tf.placeholder(tf.float32, shape=[None],
                                                     name="weight{0}".format(i)))
-
+      
         self.reg_val = reg_val
         self.sess = session
         self.evaluate = evaluate
@@ -112,17 +115,15 @@ class Model(object):
             self.forward_only = True
         else:
             assert False, phase
-        #with tf.device('/gpu:1'):
-        with tf.device('/gpu:0'):
+
+        with tf.device(gpu_device_id):
             cnn_model = CNN(self.img_data, (not self.forward_only))
             self.conv_output = cnn_model.tf_output()
             self.concat_conv_output = tf.concat(concat_dim=1, values=[self.conv_output, self.zero_paddings])
-        
-        #with tf.device('/cpu:0'): 
-        with tf.device('/gpu:0'): 
+
             self.perm_conv_output = tf.transpose(self.concat_conv_output, perm=[1, 0, 2])
 
-        with tf.device('/gpu:0'):
+        with tf.device(gpu_device_id):
             self.attention_decoder_model = Seq2SeqModel(
                 encoder_masks = self.encoder_masks,
                 encoder_inputs_tensor = self.perm_conv_output, 
@@ -134,16 +135,15 @@ class Model(object):
                 attn_num_layers = attn_num_layers,
                 attn_num_hidden = attn_num_hidden,
                 forward_only = self.forward_only,
-                use_lstm = use_lstm)
-
+                use_gru = use_gru)
+        
         # Gradients and SGD update operation for training the model.
         params = tf.trainable_variables()
 
         if not self.forward_only:
 
             self.updates = []
-            with tf.device('/gpu:0'):
-            #opt = tf.train.GradientDescentOptimizer(self.learning_rate)
+            with tf.device(gpu_device_id):
                 opt = tf.train.AdadeltaOptimizer(learning_rate=initial_learning_rate)
                 for b in xrange(len(buckets)):
                     if self.reg_val > 0:
@@ -158,16 +158,6 @@ class Model(object):
         self.saver_all = tf.train.Saver(tf.all_variables())
 
         ckpt = tf.train.get_checkpoint_state(model_dir)
-        if not ckpt or not tf.gfile.Exists(ckpt.model_checkpoint_path):
-            logging.info("model_dir: {}".format(model_dir))
-            if not ckpt:
-                logging.info("tf.train.get_checkpoint_state failed")
-            else:
-                logging.info("ckpt.model_checkpoint_path does not exist")
-                logging.info(ckpt.model_checkpoint_path)
-        else:
-            if not load_model:
-                logging.info("load_model is False!!!")
         if ckpt and load_model:
             logging.info("Reading model parameters from %s" % ckpt.model_checkpoint_path)
             #self.saver.restore(self.sess, ckpt.model_checkpoint_path)
@@ -200,21 +190,21 @@ class Model(object):
                 encoder_masks = batch['encoder_mask']
                 file_list = batch['filenames']
                 real_len = batch['real_len']
-                #print (decoder_inputs)
-                #print (encoder_masks)
+               
                 grounds = [a for a in np.array([decoder_input.tolist() for decoder_input in decoder_inputs]).transpose()]
                 _, step_loss, step_logits, step_attns = self.step(encoder_masks, img_data, zero_paddings, decoder_inputs, target_weights, bucket_id, self.forward_only)
                 curr_step_time = (time.time() - start_time)
                 step_time += curr_step_time / self.steps_per_checkpoint
-                logging.info('step_time: %f, step perplexity: %f'%(curr_step_time, math.exp(step_loss) if step_loss < 300 else float('inf')))
+                logging.info('step_time: %f, loss: %f, step perplexity: %f'%(curr_step_time, step_loss, math.exp(step_loss) if step_loss < 300 else float('inf')))
                 loss += step_loss / self.steps_per_checkpoint
                 current_step += 1
                 step_outputs = [b for b in np.array([np.argmax(logit, axis=1).tolist() for logit in step_logits]).transpose()]
                 if self.visualize:
                     step_attns = np.array([[a.tolist() for a in step_attn] for step_attn in step_attns]).transpose([1, 0, 2])
                     #print (step_attns)
+
                 for idx, output, ground in zip(range(len(grounds)), step_outputs, grounds):
-                    flag_ground,flag_out = True,True
+                    flag_ground,flag_out = True, True
                     num_total += 1
                     output_valid = []
                     ground_valid = []
@@ -248,9 +238,8 @@ class Model(object):
             total = (self.s_gen.get_size() // self.batch_size)
             with tqdm(desc='Train: ', total=total) as pbar:
                 for epoch in range(self.num_epoch):
-                    logging.info('Generating first batch)')
-                    for i,batch in enumerate(self.s_gen.gen(self.batch_size)):
-                        #logging.info('Generated batch number: {}'.format(i))
+                   logging.info('Generating first batch)')
+                   for i,batch in enumerate(self.s_gen.gen(self.batch_size)):
                         # Get a batch and make a step.
 
                         start_time = time.time()
@@ -266,7 +255,7 @@ class Model(object):
                         _, step_loss, step_logits, _ = self.step(encoder_masks, img_data, zero_paddings, decoder_inputs, target_weights, bucket_id, self.forward_only)
                         curr_step_time = (time.time() - start_time)
                         step_time += curr_step_time / self.steps_per_checkpoint
-                        #logging.info('step_time: %f, step perplexity: %f'%(curr_step_time, math.exp(step_loss) if step_loss < 300 else float('inf')))
+                        logging.info('step_time: %f, step_loss: %f, step perplexity: %f'%(curr_step_time, step_loss, math.exp(step_loss) if step_loss < 300 else float('inf')))
                         loss += step_loss / self.steps_per_checkpoint
                         pbar.set_description('Train, loss={:.8f}'.format(step_loss))
                         pbar.update()
@@ -282,9 +271,8 @@ class Model(object):
                         if current_step % self.steps_per_checkpoint == 0:
                             # Print statistics for the previous epoch.
                             perplexity = math.exp(loss) if loss < 300 else float('inf')
-                            logging.info("global step %d step-time %.2f perplexity "
-                                        "%.2f" % (self.global_step.eval(),
-                                        step_time, perplexity))
+                            logging.info("global step %d step-time %.2f loss %f  perplexity "
+                                    "%.2f" % (self.global_step.eval(), step_time, loss, perplexity))
                             previous_losses.append(loss)
                             # Save checkpoint and zero timer and loss.
                             if not self.forward_only:
@@ -308,10 +296,6 @@ class Model(object):
         
         # Input feed: encoder inputs, decoder inputs, target_weights, as provided.
         input_feed = {}
-        if not forward_only:
-            input_feed[K.learning_phase()] = 0
-        else:
-            input_feed[K.learning_phase()] = 0
         input_feed[self.img_data.name] = img_data
         input_feed[self.zero_paddings.name] = zero_paddings
         for l in xrange(decoder_size):
@@ -367,14 +351,14 @@ class Model(object):
                 img_data = np.asarray(img, dtype=np.uint8)
                 for idx in range(len(output_valid)):
                     output_filename = os.path.join(output_dir, 'image_%d.jpg'%(idx))
-                    attention = attentions[idx][:(real_len/4-1)]
+                    attention = attentions[idx][:(int(real_len/4)-1)]
 
                     # I have got the attention_orig here, which is of size 32*len(ground_truth), the only thing left is to visualize it and save it to output_filename
                     # TODO here
                     attention_orig = np.zeros(real_len)
                     for i in range(real_len):
                         if 0 < i/4-1 and i/4-1 < len(attention):
-                            attention_orig[i] = attention[i/4-1]
+                            attention_orig[i] = attention[int(i/4)-1]
                     attention_orig = np.convolve(attention_orig, [0.199547,0.200226,0.200454,0.200226,0.199547], mode='same')
                     attention_orig = np.maximum(attention_orig, 0.3)
                     attention_out = np.zeros((h, real_len))

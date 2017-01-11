@@ -56,7 +56,7 @@ class Seq2SeqModel(object):
             attn_num_layers,
             attn_num_hidden,
             forward_only,
-            use_lstm):
+            use_gru):
         """Create the model.
 
         Args:
@@ -84,19 +84,21 @@ class Seq2SeqModel(object):
         self.encoder_masks = encoder_masks
 
         # Create the internal multi-layer cell for our RNN.
-        single_cell = tf.nn.rnn_cell.GRUCell(attn_num_hidden)
-        if use_lstm:
-            single_cell = tf.nn.rnn_cell.BasicLSTMCell(attn_num_hidden, forget_bias=0.0,state_is_tuple=False)
+        single_cell = tf.nn.rnn_cell.BasicLSTMCell(attn_num_hidden, forget_bias=0.0, state_is_tuple=False)
+        if use_gru:
+            print("using GRU CELL in decoder")
+            single_cell = tf.nn.rnn_cell.GRUCell(attn_num_hidden)
         cell = single_cell
+
         if attn_num_layers > 1:
-            cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] * attn_num_layers,state_is_tuple=False)
+            cell = tf.nn.rnn_cell.MultiRNNCell([single_cell] * attn_num_layers, state_is_tuple=False)
 
         # The seq2seq function: we use embedding for the input and attention.
         def seq2seq_f(lstm_inputs, decoder_inputs, seq_length, do_decode):
             num_hidden = attn_num_layers * attn_num_hidden
-            lstm_fw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_hidden, forget_bias=0.0,state_is_tuple=False)
+            lstm_fw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_hidden, forget_bias=0.0, state_is_tuple=False)
             # Backward direction cell
-            lstm_bw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_hidden, forget_bias=0.0,state_is_tuple=False)
+            lstm_bw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_hidden, forget_bias=0.0, state_is_tuple=False)
             pre_encoder_inputs, output_state_fw, output_state_bw = tf.nn.bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, lstm_inputs,
                 initial_state_fw=None, initial_state_bw=None,
                 dtype=tf.float32, sequence_length=None, scope=None)
@@ -113,7 +115,8 @@ class Seq2SeqModel(object):
                     output_size=target_vocab_size, 
                     output_projection=None,
                     feed_previous=do_decode,
-                    initial_state_attention=False)
+                    initial_state_attention=False,
+                    attn_num_hidden = attn_num_hidden)
             return outputs, attention_weights_history
 
         # Our targets are decoder inputs shifted by one.
