@@ -6,9 +6,7 @@ import numpy as np
 from PIL import Image
 import tensorflow as tf
 tf.logging.set_verbosity(tf.logging.ERROR)
-sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
-import keras.backend as K
-K.set_session(sess)
+
 
 from model.model import Model
 import exp_config
@@ -94,6 +92,16 @@ def process_args(args, defaults):
                         type=str, default=defaults.OUTPUT_DIR,
                         help=('Output directory, default=%s' 
                             %(defaults.OUTPUT_DIR)))
+    parser.add_argument('--max_gradient_norm', dest="max_gradient_norm",
+                        type=int, default=defaults.MAX_GRADIENT_NORM,
+                        help=('Clip gradients to this norm.'
+                              ', default=%s'
+                              % (defaults.MAX_GRADIENT_NORM)))
+    parser.add_argument('--no-gradient_clipping', dest='clip_gradients', action='store_false',
+                        help=('Do not perform gradient clipping, difault for clip_gradients is %s' %
+                              (defaults.CLIP_GRADIENTS)))
+    parser.set_defaults(clip_gradients=defaults.CLIP_GRADIENTS)
+
     parameters = parser.parse_args(args)
     return parameters
 
@@ -109,7 +117,7 @@ def main(args, defaults):
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
 
-    with sess.as_default():
+    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         model = Model(
                 phase = parameters.phase,
                 visualize = parameters.visualize,
@@ -125,6 +133,8 @@ def main(args, defaults):
                 target_embedding_size = parameters.target_embedding_size,
                 attn_num_hidden = parameters.attn_num_hidden,
                 attn_num_layers = parameters.attn_num_layers,
+                clip_gradients = parameters.clip_gradients,
+                max_gradient_norm = parameters.max_gradient_norm,
                 load_model = parameters.load_model,
                 valid_target_length = float('inf'),
                 gpu_id=parameters.gpu_id,

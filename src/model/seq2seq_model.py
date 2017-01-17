@@ -95,13 +95,16 @@ class Seq2SeqModel(object):
 
         # The seq2seq function: we use embedding for the input and attention.
         def seq2seq_f(lstm_inputs, decoder_inputs, seq_length, do_decode):
+
             num_hidden = attn_num_layers * attn_num_hidden
             lstm_fw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_hidden, forget_bias=0.0, state_is_tuple=False)
             # Backward direction cell
             lstm_bw_cell = tf.nn.rnn_cell.BasicLSTMCell(num_hidden, forget_bias=0.0, state_is_tuple=False)
+
             pre_encoder_inputs, output_state_fw, output_state_bw = tf.nn.bidirectional_rnn(lstm_fw_cell, lstm_bw_cell, lstm_inputs,
                 initial_state_fw=None, initial_state_bw=None,
                 dtype=tf.float32, sequence_length=None, scope=None)
+
             encoder_inputs = [e*f for e,f in zip(pre_encoder_inputs,encoder_masks[:seq_length])]
             top_states = [array_ops.reshape(e, [-1, 1, num_hidden*2])
                     for e in encoder_inputs]

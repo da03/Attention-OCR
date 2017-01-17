@@ -39,14 +39,16 @@ class Model(object):
             model_dir, 
             target_embedding_size,
             attn_num_hidden, 
-            attn_num_layers, 
+            attn_num_layers,
+            clip_gradients,
+            max_gradient_norm,
             session,
             load_model,
             gpu_id,
             use_gru,
             evaluate=False,
             valid_target_length=float('inf'),
-            reg_val = 0):
+            reg_val = 0 ):
             
         gpu_device_id = '/gpu:' + str(gpu_id)
         if not os.path.exists(model_dir):
@@ -61,17 +63,25 @@ class Model(object):
             self.s_gen = DataGen(
                 data_base_dir, data_path, evaluate=True)
 
+
         #logging.info('valid_target_length: %s' %(str(valid_target_length)))
-        logging.info('data_path: %s' %(data_path))
-        logging.info('phase: %s' %phase)    
-        logging.info('batch_size: %d' %batch_size)
+        logging.info('phase: %s' % phase)
+        logging.info('model_dir: %s' % (model_dir))
+        logging.info('load_model: %s' % (load_model))
+        logging.info('output_dir: %s' % (output_dir))
+        logging.info('steps_per_checkpoint: %d' % (steps_per_checkpoint))
+        logging.info('batch_size: %d' %(batch_size))
         logging.info('num_epoch: %d' %num_epoch)
-        logging.info('steps_per_checkpoint %d' %steps_per_checkpoint)
+        logging.info('learning_rate: %d' % initial_learning_rate)
+        logging.info('reg_val: %d' % (reg_val))
+        logging.info('max_gradient_norm: %f' % max_gradient_norm)
+        logging.info('clip_gradients: %s' % clip_gradients)
+        logging.info('valid_target_length %f' %valid_target_length)
         logging.info('target_vocab_size: %d' %target_vocab_size)
-        logging.info('model_dir: %s' %model_dir)
-        logging.info('target_embedding_size: %d' %target_embedding_size)
-        logging.info('attn_num_hidden: %d' %attn_num_hidden)
-        logging.info('attn_num_layers: %d' %attn_num_layers)
+        logging.info('target_embedding_size: %f' % target_embedding_size)
+        logging.info('attn_num_hidden: %d' % attn_num_hidden)
+        logging.info('attn_num_layers: %d' % attn_num_layers)
+        logging.info('visualize: %s' % visualize)
 
         buckets = self.s_gen.bucket_specs
         logging.info('buckets')
@@ -108,6 +118,8 @@ class Model(object):
         self.valid_target_length = valid_target_length
         self.phase = phase
         self.visualize = visualize
+        self.learning_rate = initial_learning_rate
+        self.clip_gradients = clip_gradients
        
         if phase == 'train':
             self.forward_only = False
@@ -117,7 +129,7 @@ class Model(object):
             assert False, phase
 
         with tf.device(gpu_device_id):
-            cnn_model = CNN(self.img_data, (not self.forward_only))
+            cnn_model = CNN(self.img_data, True) #(not self.forward_only))
             self.conv_output = cnn_model.tf_output()
             self.concat_conv_output = tf.concat(concat_dim=1, values=[self.conv_output, self.zero_paddings])
 
@@ -136,14 +148,17 @@ class Model(object):
                 attn_num_hidden = attn_num_hidden,
                 forward_only = self.forward_only,
                 use_gru = use_gru)
-        
-        # Gradients and SGD update operation for training the model.
-        params = tf.trainable_variables()
+
+
+
 
         if not self.forward_only:
 
             self.updates = []
+            self.summaries_by_bucket = []
             with tf.device(gpu_device_id):
+                params = tf.trainable_variables()
+                # Gradients and SGD update operation for training the model.
                 opt = tf.train.AdadeltaOptimizer(learning_rate=initial_learning_rate)
                 for b in xrange(len(buckets)):
                     if self.reg_val > 0:
@@ -153,7 +168,31 @@ class Model(object):
                         loss_op = self.reg_val * tf.reduce_sum(reg_losses) + self.attention_decoder_model.losses[b]
                     else:
                         loss_op = self.attention_decoder_model.losses[b]
-                    self.updates.append(opt.minimize(loss_op, global_step=self.global_step))
+
+                    gradients, params = zip(*opt.compute_gradients(loss_op, params))
+                    if self.clip_gradients:
+                        gradients, _ = tf.clip_by_global_norm(gradients, max_gradient_norm)
+                    # Add summaries for loss, variables, gradients, gradient norms and total gradient norm.
+                    summaries = []
+                    '''
+                    for gradient, variable in gradients:
+                        if isinstance(gradient, tf.IndexedSlices):
+                            grad_values = gradient.values
+                        else:
+                            grad_values = gradient
+                        summaries.append(tf.summary.histogram(variable.name, variable))
+                        summaries.append(tf.summary.histogram(variable.name + "/gradients", grad_values))
+                        summaries.append(tf.summary.scalar(variable.name + "/gradient_norm",
+                                             tf.global_norm([grad_values])))
+                    '''
+                    summaries.append(tf.summary.scalar("loss", loss_op))
+                    summaries.append(tf.summary.scalar("total_gradient_norm", tf.global_norm(gradients)))
+                    all_summaries = tf.summary.merge(summaries)
+                    self.summaries_by_bucket.append(all_summaries)
+                    # update op - apply gradients
+                    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+                    with tf.control_dependencies(update_ops):
+                        self.updates.append(opt.apply_gradients(zip(gradients, params), global_step=self.global_step))
 
         self.saver_all = tf.train.Saver(tf.all_variables())
 
@@ -167,11 +206,13 @@ class Model(object):
             self.sess.run(tf.initialize_all_variables())
         #self.sess.run(init_new_vars_op)
 
+
     # train or test as specified by phase
     def launch(self):
         step_time, loss = 0.0, 0.0
         current_step = 0
         previous_losses = []
+        writer = tf.summary.FileWriter(self.model_dir, self.sess.graph)
         if self.phase == 'test':
             if not distance_loaded:
                 logging.info('Warning: distance module not installed. Do whole sequence comparison instead.')
@@ -238,11 +279,14 @@ class Model(object):
             total = (self.s_gen.get_size() // self.batch_size)
             with tqdm(desc='Train: ', total=total) as pbar:
                 for epoch in range(self.num_epoch):
+
                    logging.info('Generating first batch)')
                    for i,batch in enumerate(self.s_gen.gen(self.batch_size)):
                         # Get a batch and make a step.
-
+                        num_total = 0
+                        num_correct = 0
                         start_time = time.time()
+                        batch_len = batch['real_len']
                         bucket_id = batch['bucket_id']
                         img_data = batch['data']
                         zero_paddings = batch['zero_paddings']
@@ -252,10 +296,46 @@ class Model(object):
                         #logging.info('current_step: %d'%current_step)
                         #logging.info(np.array([decoder_input.tolist() for decoder_input in decoder_inputs]).transpose()[0])
                         #print (np.array([target_weight.tolist() for target_weight in target_weights]).transpose()[0])
-                        _, step_loss, step_logits, _ = self.step(encoder_masks, img_data, zero_paddings, decoder_inputs, target_weights, bucket_id, self.forward_only)
+                        summaries, step_loss, step_logits, _ = self.step(encoder_masks, img_data, zero_paddings, decoder_inputs, target_weights, bucket_id, self.forward_only)
+
+                        grounds = [a for a in
+                                   np.array([decoder_input.tolist() for decoder_input in decoder_inputs]).transpose()]
+                        step_outputs = [b for b in
+                                        np.array(
+                                            [np.argmax(logit, axis=1).tolist() for logit in step_logits]).transpose()]
+
+                        for idx, output, ground in zip(range(len(grounds)), step_outputs, grounds):
+                            flag_ground, flag_out = True, True
+                            num_total += 1
+                            output_valid = []
+                            ground_valid = []
+                            for j in range(1, len(ground)):
+                                s1 = output[j - 1]
+                                s2 = ground[j]
+                                if s2 != 2 and flag_ground:
+                                    ground_valid.append(s2)
+                                else:
+                                    flag_ground = False
+                                if s1 != 2 and flag_out:
+                                    output_valid.append(s1)
+                                else:
+                                    flag_out = False
+                            if distance_loaded:
+                                num_incorrect = distance.levenshtein(output_valid, ground_valid)
+                                num_incorrect = float(num_incorrect) / len(ground_valid)
+                                num_incorrect = min(1.0, num_incorrect)
+                            else:
+                                if output_valid == ground_valid:
+                                    num_incorrect = 0
+                                else:
+                                    num_incorrect = 1
+                            num_correct += 1. - num_incorrect
+
+                        writer.add_summary(summaries, current_step)
                         curr_step_time = (time.time() - start_time)
                         step_time += curr_step_time / self.steps_per_checkpoint
-                        logging.info('step_time: %f, step_loss: %f, step perplexity: %f'%(curr_step_time, step_loss, math.exp(step_loss) if step_loss < 300 else float('inf')))
+                        precision = num_correct / num_total
+                        logging.info('step %f - time: %f, loss: %f, perplexity: %f, precision: %f, batch_len: %f'%(current_step, curr_step_time, step_loss, math.exp(step_loss) if step_loss < 300 else float('inf'), precision, batch_len))
                         loss += step_loss / self.steps_per_checkpoint
                         pbar.set_description('Train, loss={:.8f}'.format(step_loss))
                         pbar.update()
@@ -313,9 +393,12 @@ class Model(object):
     
         # Output feed: depends on whether we do a backward step or not.
         if not forward_only:
-            output_feed = [self.updates[bucket_id],  # Update Op that does SGD.
+            output_feed  = [self.updates[bucket_id],  # Update Op that does SGD.
                     #self.gradient_norms[bucket_id],  # Gradient norm.
-                    self.attention_decoder_model.losses[bucket_id]]
+                    self.attention_decoder_model.losses[bucket_id],
+                             self.summaries_by_bucket[bucket_id]]
+            for l in xrange(decoder_size):  # Output logits.
+                output_feed.append(self.attention_decoder_model.outputs[bucket_id][l])
         else:
             output_feed = [self.attention_decoder_model.losses[bucket_id]]  # Loss for this batch.
             for l in xrange(decoder_size):  # Output logits.
@@ -325,7 +408,7 @@ class Model(object):
     
         outputs = self.sess.run(output_feed, input_feed)
         if not forward_only:
-            return None, outputs[1], None, None  # Gradient norm, loss, no outputs, no attentions.
+            return outputs[2], outputs[1], outputs[3:(3+self.buckets[bucket_id][1])], None  # Gradient norm summary, loss, no outputs, no attentions.
         else:
             return None, outputs[0], outputs[1:(1+self.buckets[bucket_id][1])], outputs[(1+self.buckets[bucket_id][1]):]  # No gradient norm, loss, outputs, attentions.
 

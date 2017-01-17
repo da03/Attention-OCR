@@ -14,11 +14,13 @@ class BucketData(object):
         self.max_width = 0
         self.max_label_len = 0
         self.data_list = []
+        self.data_len_list = []
         self.label_list = []
         self.file_list = []
 
     def append(self, datum, label, filename):
         self.data_list.append(datum)
+        self.data_len_list.append(int(math.floor(datum.shape[-1] / 4)) - 1)
         self.label_list.append(label)
         self.file_list.append(filename)
 
@@ -43,13 +45,15 @@ class BucketData(object):
 
         res['bucket_id'] = get_bucket_id()
         if res['bucket_id'] is None:
-            self.data_list, self.label_list = [], []
+            self.data_list, self.data_len_list, self.label_list = [], [], []
             self.max_width, self.max_label_len = 0, 0
             return None
 
         encoder_input_len, decoder_input_len = bucket_specs[res['bucket_id']]
 
         # ENCODER PART
+        res['data_len'] = [a.astype(np.int32) for a in
+                                 np.array(self.data_len_list)]
         res['data'] = np.array(self.data_list)
         real_len = max(int(math.floor(self.max_width / 4)) - 1, 0)
         padd_len = int(encoder_input_len) - real_len
