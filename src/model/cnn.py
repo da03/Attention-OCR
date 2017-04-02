@@ -1,12 +1,10 @@
 __author__ = 'moonkey'
 
 from keras import models, layers
-import logging
-import numpy as np
 # from src.data_util.synth_prepare import SynthGen
 
 import keras.backend as K
-import tensorflow as tf
+
 
 def squeeze_dim(x, axis=-1):
     return K.squeeze(x, axis=axis)
@@ -37,10 +35,8 @@ class CNN(object):
         model = models.Sequential()
 
         # width is max of all: 785(test)
-        input_layer = layers.InputLayer(input_shape=(1, 32, None))
-
-        # if input_tensor is not None:
-        input_layer.set_input(input_tensor=input_tensor)
+        input_layer = layers.InputLayer(input_shape=(1, 32, None),
+                                        input_tensor=input_tensor)
 
         model.add(input_layer)
 
@@ -107,6 +103,8 @@ class CNN(object):
         # model.add(layers.Reshape((-1, 512)))
         # model.add(layers.wrappers.TimeDistributed(layers.Flatten()))
         model.add(layers.Lambda(squeeze_dim, output_shape=squeeze_dim_shape))
+
+        model.build()
 
         self.model = model
 
