@@ -8,19 +8,7 @@ Visual Attention based OCR. The model first runs a sliding CNN on the image (ima
 # Prerequsites
 Most of our code is written based on Tensorflow, but we also use Keras for the convolution part of our model. Besides, we use python package distance to calculate edit distance for evaluation. (However, that is not mandatory, if distance is not installed, we will do exact match).
 
-### Tensorflow: [Installation Instructions](https://www.tensorflow.org/versions/r0.11/get_started/os_setup.html) (tested on 0.11.0)
-
-### Keras: [Installation Instructions](http://keras.io/#installation) (tested on 1.1.1)
-
-Set Keras backend:
-
-```
-export KERAS_BACKEND=tensorflow
-```
-
-```
-echo 'export KERAS_BACKEND=tensorflow' >> ~/.bashrc
-```
+### Tensorflow: [Installation Instructions](https://www.tensorflow.org/get_started/os_setup#download-and-setup) (tested on 0.12.1)
 
 ### Distance (Optional):
 
@@ -114,7 +102,7 @@ tar zxf model.tgz
 ```
 
 ```
-python src/launcher.py --phase=test --visualize --data-path=evaluation_data/svt/test.txt --data-base-dir=evaluation_data/svt --log-path=log.txt --load-model --model-dir=model --output-dir=results --old-model-version
+python src/launcher.py --phase=test --visualize --data-path=evaluation_data/svt/test.txt --data-base-dir=evaluation_data/svt --log-path=log.txt --load-model --model-dir=model --output-dir=results
 ```
 
 After a while, you will see something like the following output in `log.txt`:
@@ -136,8 +124,6 @@ After a while, you will see something like the following output in `log.txt`:
 2016-06-08 22:36:44,127 root  INFO     5.144444 out of 6 correct
 
 ```
-
-Note that since the updated Keras defines `running_std` different from when we trained our model, you need to add flag `--old-model-version` if you want to use the pretrained model.
 
 Example output images in `results/correct` (the output directory is set via parameter `output-dir` and the default is `results`): (Look closer to see it clearly.)
 
@@ -182,7 +168,8 @@ Image 5 (e/e): ![example image 5](http://cs.cmu.edu/~yuntiand/2evaluation_data_i
     * `attn-num-hidden`: Number of hidden units in attention decoder cell.
     * `attn-num-layers`: Number of layers in attention decoder cell. (Encoder number of hidden units will be `attn-num-hidden`*`attn-num-layers`).
     * `target-vocab-size`: Target vocabulary size. Default is = 26+10+3 # 0: PADDING, 1: GO, 2: EOS, >2: 0-9, a-z
-    
+
+
 # References
 
 [Convert a formula to its LaTex source](https://github.com/harvardnlp/im2markup)
