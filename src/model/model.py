@@ -4,13 +4,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import random, time, os, shutil, math, sys, logging,ipdb
+import random, time, os, shutil, math, sys, logging
+#import ipdb
 import numpy as np
 from six.moves import xrange  # pylint: disable=redefined-builtin
 from PIL import Image
 import tensorflow as tf
-import keras.backend as K
-from tensorflow.models.rnn.translate import data_utils
+#import keras.backend as K
+#from tensorflow.models.rnn.translate import data_utils
 
 from .cnn import CNN
 from .seq2seq_model import Seq2SeqModel
@@ -385,7 +386,8 @@ class Model(object):
             try:
                 input_feed[self.encoder_masks[l].name] = encoder_masks[l]
             except Exception as e:
-                ipdb.set_trace()
+                pass
+                #ipdb.set_trace()
     
         # Since our targets are decoder inputs shifted by one, we need one more.
         last_target = self.decoder_inputs[decoder_size].name
