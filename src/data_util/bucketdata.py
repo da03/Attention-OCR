@@ -5,7 +5,7 @@ import numpy as np
 from PIL import Image
 # from keras.preprocessing.sequence import pad_sequences
 from collections import Counter
-import _pickle as cPickle
+import pickle as cPickle
 import random
 import math
 

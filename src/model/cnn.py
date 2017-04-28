@@ -125,7 +125,7 @@ class CNN(object):
         print('input_tensor dim: {}'.format(input_tensor.get_shape()))
         net = tf.transpose(input_tensor, perm=[0, 2, 3, 1])
         net = tf.add(net, (-128.0))
-        net = tf.mul(net, (1/128.0))
+        net = tf.multiply(net, (1/128.0))
 
         net = ConvRelu(net, 64, (3, 3), 'conv_conv1')
         net = max_2x2pool(net, 'conv_pool1')
