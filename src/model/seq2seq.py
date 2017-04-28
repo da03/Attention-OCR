@@ -68,8 +68,7 @@ from tensorflow.python.ops import control_flow_ops
 from tensorflow.python.ops import embedding_ops
 from tensorflow.python.ops import math_ops
 from tensorflow.python.ops import nn_ops
-from tensorflow.python.ops import rnn
-from tensorflow.python.ops import rnn_cell
+from tensorflow.contrib.rnn.python.ops import rnn, rnn_cell
 from tensorflow.python.ops import variable_scope
 linear = rnn_cell._linear # pylint: disable=protected-access
 
@@ -551,7 +550,7 @@ def attention_decoder(decoder_inputs, initial_state, attention_states, cell,
     attention_weights_history = []
     # MODIFIED ADD END
     prev = None
-    batch_attn_size = array_ops.pack([batch_size, attn_size])
+    batch_attn_size = array_ops.stack([batch_size, attn_size])
     attns = [array_ops.zeros(batch_attn_size, dtype=dtype)
              for _ in xrange(num_heads)]
     for a in attns:  # Ensure the second shape of attention vectors is set.
@@ -892,9 +891,9 @@ def sequence_loss_by_example(logits, targets, weights,
         # violates our general scalar strictness policy.
         target = array_ops.reshape(target, [-1])
         crossent = nn_ops.sparse_softmax_cross_entropy_with_logits(
-            logit, target)
+            logits=logit, labels=target)
       else:
-        crossent = softmax_loss_function(logit, target)
+        crossent = softmax_loss_function(logits=logit, labels=target)
       log_perp_list.append(crossent * weight)
     log_perps = math_ops.add_n(log_perp_list)
     if average_across_timesteps:
@@ -988,7 +987,7 @@ def model_with_buckets(encoder_inputs_tensor, decoder_inputs, targets, weights,
     for j, bucket in enumerate(buckets):
       with variable_scope.variable_scope(variable_scope.get_variable_scope(),
                                          reuse=True if j > 0 else None):
-        encoder_inputs = tf.split(0, bucket[0], encoder_inputs_tensor)
+        encoder_inputs = tf.split(encoder_inputs_tensor, bucket[0], 0)
         encoder_inputs = [tf.squeeze(encoder_input,squeeze_dims=[0]) for encoder_input in encoder_inputs]
         bucket_outputs, attention_weights_history = seq2seq(encoder_inputs[:int(bucket[0])],
                                     decoder_inputs[:int(bucket[1])], int(bucket[0]))

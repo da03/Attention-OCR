@@ -132,7 +132,7 @@ class Model(object):
         with tf.device(gpu_device_id):
             cnn_model = CNN(self.img_data, True) #(not self.forward_only))
             self.conv_output = cnn_model.tf_output()
-            self.concat_conv_output = tf.concat(concat_dim=1, values=[self.conv_output, self.zero_paddings])
+            self.concat_conv_output = tf.concat(axis=1, values=[self.conv_output, self.zero_paddings])
 
             self.perm_conv_output = tf.transpose(self.concat_conv_output, perm=[1, 0, 2])
 

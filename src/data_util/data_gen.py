@@ -4,7 +4,7 @@ import os
 import numpy as np
 from PIL import Image
 from collections import Counter
-import _pickle as cPickle
+import pickle as cPickle
 import random, math
 from data_util.bucketdata import BucketData
 
