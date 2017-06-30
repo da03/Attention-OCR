@@ -8,7 +8,7 @@ Visual Attention based OCR. The model first runs a sliding CNN on the image (ima
 # Prerequsites
 Most of our code is written based on Tensorflow, but we also use Keras for the convolution part of our model. Besides, we use python package distance to calculate edit distance for evaluation. (However, that is not mandatory, if distance is not installed, we will do exact match).
 
-### Tensorflow: [Installation Instructions](https://www.tensorflow.org/get_started/os_setup#download-and-setup) (tested on 0.12.1)
+### Tensorflow: [Installation Instructions](https://www.tensorflow.org/install/) (tested on 1.2.0)
 
 ### Distance (Optional):
 
