@@ -1,13 +1,8 @@
 __author__ = 'moonkey'
 
-import os
-import numpy as np
-from PIL import Image
-# from keras.preprocessing.sequence import pad_sequences
-from collections import Counter
-import pickle as cPickle
-import random
 import math
+import numpy as np
+
 
 class BucketData(object):
     def __init__(self):
@@ -18,13 +13,13 @@ class BucketData(object):
         self.label_list = []
         self.file_list = []
 
-    def append(self, datum, label, filename):
+    def append(self, datum, width, label, filename):
         self.data_list.append(datum)
-        self.data_len_list.append(int(math.floor(datum.shape[-1] / 4)) - 1)
+        self.data_len_list.append(int(math.floor(float(width) / 4)) - 1)
         self.label_list.append(label)
         self.file_list.append(filename)
 
-        self.max_width = max(datum.shape[-1], self.max_width)
+        self.max_width = max(width, self.max_width)
         self.max_label_len = max(len(label), self.max_label_len)
 
         return len(self.data_list)
@@ -53,7 +48,7 @@ class BucketData(object):
 
         # ENCODER PART
         res['data_len'] = [a.astype(np.int32) for a in
-                                 np.array(self.data_len_list)]
+                           np.array(self.data_len_list)]
         res['data'] = np.array(self.data_list)
         real_len = max(int(math.floor(self.max_width / 4)) - 1, 0)
         padd_len = int(encoder_input_len) - real_len
@@ -89,8 +84,7 @@ class BucketData(object):
                                  np.array(self.label_list).T]
         res['target_weights'] = [a.astype(np.float32) for a in
                                  np.array(target_weights).T]
-        #print (res['decoder_inputs'][0])
-        #assert False
+
         assert len(res['decoder_inputs']) == len(res['target_weights'])
         res['filenames'] = self.file_list
 
