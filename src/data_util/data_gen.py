@@ -13,10 +13,9 @@ from .bucketdata import BucketData
 
 
 class DataGen(object):
-    SYMBOLS = {
-        "GO": 1,
-        "EOS": 2
-    }
+    _GO = 1
+    _EOS = 2
+
     IMG_HEIGHT = 32
 
     def __init__(self,
@@ -48,12 +47,16 @@ class DataGen(object):
             self.annotation_path = os.path.join(data_root, annotation_fn)
 
         if evaluate:
-            self.bucket_specs = [(int(math.floor(64 / 4)), int(word_len + 2)), (int(math.floor(108 / 4)), int(word_len + 2)),
-                                 (int(math.floor(140 / 4)), int(word_len + 2)), (int(math.floor(256 / 4)), int(word_len + 2)),
+            self.bucket_specs = [(int(math.floor(64 / 4)), int(word_len + 2)),
+                                 (int(math.floor(108 / 4)), int(word_len + 2)),
+                                 (int(math.floor(140 / 4)), int(word_len + 2)),
+                                 (int(math.floor(256 / 4)), int(word_len + 2)),
                                  (int(math.floor(img_width_range[1] / 4)), int(word_len + 2))]
         else:
-            self.bucket_specs = [(int(64 / 4), 9 + 2), (int(108 / 4), 15 + 2),
-                                 (int(140 / 4), 17 + 2), (int(256 / 4), 20 + 2),
+            self.bucket_specs = [(int(64 / 4), 9 + 2),
+                                 (int(108 / 4), 15 + 2),
+                                 (int(140 / 4), 17 + 2),
+                                 (int(256 / 4), 20 + 2),
                                  (int(math.ceil(img_width_range[1] / 4)), word_len + 2)]
 
         self.bucket_data = {i: BucketData()
@@ -96,9 +99,9 @@ class DataGen(object):
                         bucket_size = self.bucket_data[b_idx].append(img, width, word, lex)
                         if bucket_size >= batch_size:
                             bucket = self.bucket_data[b_idx].flush_out(
-                                    self.bucket_specs,
-                                    valid_target_length=valid_target_len,
-                                    go_shift=1)
+                                self.bucket_specs,
+                                valid_target_length=valid_target_len,
+                                go_shift=1)
                             if bucket is not None:
                                 yield bucket
                             else:
@@ -113,12 +116,12 @@ class DataGen(object):
     def read_data(self, img, lex):
         assert lex and len(lex) < self.bucket_specs[-1][1]
 
-        word = [self.SYMBOLS['GO']]
+        word = [self._GO]
         for char in lex:
             assert 96 < ord(char) < 123 or 47 < ord(char) < 58
             word.append(
                 ord(char) - 97 + 13 if ord(char) > 96 else ord(char) - 48 + 3)
-        word.append(self.SYMBOLS['EOS'])
+        word.append(self._EOS)
         word = np.array(word, dtype=np.int32)
 
         return img, word
