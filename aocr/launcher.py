@@ -61,6 +61,7 @@ def process_args(args, defaults):
 
     # Exporting
     parser_export = subparsers.add_parser('export', help='Export the saved checkpoints for production.')
+    parser_test.set_defaults(phase='export')
     parser_export.add_argument('export_path', metavar='path',
                         type=str, default=defaults.EXPORT_PATH,
                         help=('Path to export the model in the specified format,'

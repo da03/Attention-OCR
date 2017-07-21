@@ -385,7 +385,9 @@ class Model(object):
         last_target = self.decoder_inputs[decoder_size].name
         input_feed[last_target] = np.zeros([self.batch_size], dtype=np.int32)
 
-        # TODO: merging into one op
+        # TODO: one op for answer
+        # TODO: visualization
+        # TODO: cleanup
 
         # Output feed: depends on whether we do a backward step or not.
         output_feed = [self.attention_decoder_model.losses[bucket_id]]  # Loss for this batch.
