@@ -56,8 +56,10 @@ class DataGen(object):
         self.bucket_data = {i: BucketData()
                             for i in range(self.bucket_max_width + 1)}
 
-        filename_queue = tf.train.string_input_producer([self.annotation_path], num_epochs=self.epochs)
-        self.images, self.labels = parse_tfrecords(filename_queue)
+        dataset = tf.contrib.data.TFRecordDataset([self.annotation_path])
+        dataset = dataset.map(self._parse_record)
+        dataset = dataset.shuffle(buffer_size=10000)
+        self.dataset = dataset.repeat(self.epochs)
 
     def clear(self):
         self.bucket_data = {i: BucketData()
@@ -66,20 +68,15 @@ class DataGen(object):
     def gen(self, batch_size):
         valid_target_len = self.valid_target_len
 
-        images, labels = tf.train.shuffle_batch(
-            [self.images, self.labels], batch_size=batch_size, num_threads=2,
-            capacity=1000 + 3 * batch_size, min_after_dequeue=1000)
+        dataset = self.dataset.batch(batch_size)
+        iterator = dataset.make_one_shot_iterator()
+
+        images, labels = iterator.get_next()
 
         with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
-            sess.run([
-                tf.local_variables_initializer(),
-                tf.global_variables_initializer(),
-            ])
-            coord = tf.train.Coordinator()
-            threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-            try:
-                while not coord.should_stop():
+            while True:
+                try:
                     raw_images, raw_labels = sess.run([images, labels])
                     for img, lex in zip(raw_images, raw_labels):
                         word = self.convert_lex(lex)
@@ -101,10 +98,8 @@ class DataGen(object):
                                 yield bucket
                             else:
                                 assert False, 'no valid bucket of width %d' % resized_width
-
-            finally:
-                coord.request_stop()
-                coord.join(threads)
+                except tf.errors.OutOfRangeError:
+                    break
 
         self.clear()
 
@@ -121,14 +116,12 @@ class DataGen(object):
 
         return word
 
-
-def parse_tfrecords(filename_queue):
-    reader = tf.TFRecordReader()
-    _, serialized_example = reader.read(filename_queue)
-    features = tf.parse_single_example(
-        serialized_example,
-        features={
-            'image': tf.FixedLenFeature([], tf.string),
-            'answer': tf.FixedLenFeature([], tf.string),
-        })
-    return features['image'], features['answer']
+    @staticmethod
+    def _parse_record(example_proto):
+        features = tf.parse_single_example(
+            example_proto,
+            features={
+                'image': tf.FixedLenFeature([], tf.string),
+                'label': tf.FixedLenFeature([], tf.string),
+            })
+        return features["image"], features["label"]
