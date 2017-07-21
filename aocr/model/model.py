@@ -60,8 +60,7 @@ class Model(object):
                 epochs=num_epoch)
         else:
             batch_size = 1
-            self.s_gen = DataGen(
-                data_path, evaluate=True)
+            self.s_gen = DataGen(data_path, evaluate=True, epochs=1)
 
         logging.info('phase: %s' % phase)
         logging.info('model_dir: %s' % (model_dir))
@@ -86,8 +85,6 @@ class Model(object):
         logging.info(buckets)
         if use_gru:
             logging.info('using GRU in the decoder.')
-
-        # TODO: rename answer to label
 
         # variables
 
@@ -244,7 +241,7 @@ class Model(object):
     def test(self):
         step_time = 0.0
         loss = 0.0
-        current_step = 0
+        current_step = 1
         num_correct = 0
         num_total = 0
 
@@ -294,7 +291,7 @@ class Model(object):
     def train(self):
         step_time = 0.0
         loss = 0.0
-        current_step = 0
+        current_step = 1
         writer = tf.summary.FileWriter(self.model_dir, self.sess.graph)
 
         logging.info('Starting the training process.')
@@ -333,7 +330,6 @@ class Model(object):
             precision = num_correct / self.batch_size
             logging.info('step %f - time: %f, loss: %f, perplexity: %f, precision: %f, batch_len: %f'
                          % (current_step, curr_step_time, result['loss'], math.exp(result['loss']) if result['loss'] < 300 else float('inf'), precision, batch['real_len']))
-            current_step += 1
 
             # Once in a while, we save checkpoint, print statistics, and run evals.
             if current_step % self.steps_per_checkpoint == 0:
@@ -346,6 +342,8 @@ class Model(object):
                 logging.info("Saving model, current_step: %d"%current_step)
                 self.saver_all.save(self.sess, checkpoint_path, global_step=self.global_step)
                 step_time, loss = 0.0, 0.0
+
+            current_step += 1
 
     def to_savedmodel(self):
         raise NotImplementedError
