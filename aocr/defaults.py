@@ -9,6 +9,7 @@ class Config:
     VISUALIZE = False
 
     # I/O
+    NEW_DATASET_PATH = 'dataset.tfrecords'
     DATA_PATH = 'data.tfrecords'
     MODEL_DIR = 'models'
     LOG_PATH = 'attentionocr.log'

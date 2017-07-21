@@ -6,6 +6,7 @@ import tensorflow as tf
 
 from .model.model import Model
 from .defaults import Config
+from .util import dataset
 
 tf.logging.set_verbosity(tf.logging.ERROR)
 
@@ -23,14 +24,23 @@ def process_args(args, defaults):
     parser.set_defaults(load_model=defaults.LOAD_MODEL)
 
     # Dataset generation
-    parser_dataset = subparsers.add_parser('dataset', help='Create a dataset in the .tfrecords format for training or testing.')
+    parser_dataset = subparsers.add_parser('dataset', help='Create a dataset in the TFRecords format.')
+    parser_dataset.set_defaults(phase='dataset')
+    parser_dataset.add_argument('annotations_path', metavar='annotations',
+                              type=str,
+                              help=('Path to the annotation file'))
+    parser_dataset.add_argument('output_path', nargs='?', metavar='output',
+                              type=str, default=defaults.NEW_DATASET_PATH,
+                              help=('Output path'
+                                    ', default=%s'
+                                    % (defaults.NEW_DATASET_PATH)))
 
     # Training
     parser_train = subparsers.add_parser('train', help='Train the model and save checkpoints.')
     parser_train.set_defaults(phase='train')
-    parser_train.add_argument('dataset',
+    parser_train.add_argument('dataset_path', metavar='dataset',
                               type=str, default=defaults.DATA_PATH,
-                              help=('Path of the .tfrecords file containing the image/label pairs'
+                              help=('Training dataset in the TFRecords format'
                                     ', default=%s'
                                     % (defaults.DATA_PATH)))
     parser_train.add_argument('--no-resume', dest='load_model', action='store_false',
@@ -40,9 +50,9 @@ def process_args(args, defaults):
     # Testing
     parser_test = subparsers.add_parser('test', help='Test the saved model.')
     parser_test.set_defaults(phase='test')
-    parser_test.add_argument('dataset',
+    parser_test.add_argument('dataset_path', metavar='dataset',
                         type=str, default=defaults.DATA_PATH,
-                        help=('Path of the .tfrecords file containing the image/label pairs'
+                        help=('Testing dataset in the TFRecords format'
                               ', default=%s'
                               % (defaults.DATA_PATH)))
     parser_test.add_argument('--visualize', dest='visualize', action='store_true',
@@ -142,10 +152,15 @@ def main(args):
     logging.getLogger('').addHandler(console)
 
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+
+        if parameters.phase == 'dataset':
+            dataset.generate(parameters.annotations_path, parameters.output_path)
+            return
+
         model = Model(
             phase=parameters.phase,
             visualize=parameters.visualize,
-            data_path=parameters.dataset,
+            data_path=parameters.dataset_path,
             output_dir=parameters.output_dir,
             batch_size=parameters.batch_size,
             initial_learning_rate=parameters.initial_learning_rate,
