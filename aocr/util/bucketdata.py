@@ -1,5 +1,3 @@
-__author__ = 'moonkey'
-
 import math
 import numpy as np
 
